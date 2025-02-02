@@ -1,0 +1,45 @@
+.faq-container {
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  gap: 10px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2); /* Gradient background */
+  min-height: 100vh;
+}
+
+.faq-card,
+.add-faq-card {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  margin-bottom: 24px;
+}
+
+.faq-panel {
+  margin-bottom: 16px;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+.faq-answer {
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+/* Custom styles for the Jodit editor */
+.jodit-container {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  margin-top: 16px;
+}
+
+/* Custom styles for the collapse header */
+.ant-collapse-header {
+  font-weight: 500;
+  font-size: 16px;
+}
