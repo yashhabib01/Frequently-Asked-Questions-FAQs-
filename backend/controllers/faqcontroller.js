@@ -41,6 +41,7 @@ exports.getFaqs = async (req, res) => {
               faq.translations[lang] = {
                 question: translatedQuestion,
                 answer: translatedAnswer,
+                id: faq._id,
               };
 
               const updatedData = await FAQ.updateOne(
@@ -106,12 +107,51 @@ exports.createFaq = async (req, res) => {
     // updating the default english faq in redis
     let cachedFaqs = await redisClient.get("faqs:en");
     cachedFaqs = cachedFaqs ? JSON.parse(cachedFaqs) : [];
-    cachedFaqs.push({ question, answer });
+    cachedFaqs.push({ question, answer, id: newFAQ._id });
     await redisClient.set("faqs:en", JSON.stringify(cachedFaqs));
 
     res.json(newFAQ);
   } catch (error) {
     console.error("Error adding FAQ:", error);
     res.status(500).json({ error: "Failed to add FAQ" });
+  }
+};
+
+/**
+ * DELETE /faqs
+ * @summary Deletes a specific FAQ by its ID.
+ * @description Accepts an FAQ ID in the request query, deletes the corresponding FAQ from the database,
+ * and removes it from the Redis cache if present. Returns a success message or an error message.
+ * @param {Object} req - The request object containing the FAQ ID in the query.
+ * @param {Object} res - The response object used to send the success or error message.
+ * @return {Object} - A message indicating successful deletion and the deleted FAQ object.
+ * @throws {BadRequest} - If the FAQ ID is missing.
+ * @throws {NotFound} - If the FAQ is not found.
+ * @throws {InternalServerError} - If there is an error deleting the FAQ.
+ */
+
+exports.deleteFaq = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ error: "FAQ ID is required." });
+  }
+
+  try {
+    const deletedFAQ = await FAQ.findByIdAndDelete(id);
+    if (!deletedFAQ) {
+      return res.status(404).json({ error: "FAQ not found." });
+    }
+
+    let cachedFaqs = await redisClient.get("faqs:en");
+    if (cachedFaqs) {
+      cachedFaqs = JSON.parse(cachedFaqs);
+      cachedFaqs = cachedFaqs.filter((faq) => faq.id != id);
+      await redisClient.set("faqs:en", JSON.stringify(cachedFaqs));
+    }
+
+    res.json({ message: "FAQ deleted successfully.", deletedFAQ });
+  } catch (error) {
+    console.error("Error deleting FAQ:", error);
+    res.status(500).json({ error: "Failed to delete FAQ" });
   }
 };
