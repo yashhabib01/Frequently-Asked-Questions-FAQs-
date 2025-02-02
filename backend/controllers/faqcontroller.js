@@ -1,4 +1,5 @@
 const FAQ = require("../model/Faq");
+const { mongoose } = require("mongoose");
 const { translateQuestion, translateAnswer } = require("../utils/tranlate");
 const redisClient = require("../config/redis");
 
@@ -132,7 +133,7 @@ exports.createFaq = async (req, res) => {
 
 exports.deleteFaq = async (req, res) => {
   const { id } = req.params;
-  if (!id) {
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ error: "FAQ ID is required." });
   }
 
