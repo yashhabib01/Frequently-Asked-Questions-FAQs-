@@ -41,7 +41,7 @@ const App = () => {
       if(response.status === 200){        
        setFaqs(response.data);
      }
-      console.log(response.data)
+      
     } catch (error) {
       console.log("Error fetching FAQs:", error);
     }
