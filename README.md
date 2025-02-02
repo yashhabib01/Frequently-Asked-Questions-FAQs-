@@ -11,6 +11,7 @@ The FAQ service is a system that allows users to add, retrieve, and translate fr
 
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
+- [FAQs System](#faqs-system)
 - [Setup Instructions](#setup-instructions)
 - [Testing](#testing)
 - [API Endpoints](#api-endpoints)
@@ -41,6 +42,49 @@ The **React frontend** communicates with the backend through these API endpoints
 - **React**: For Frontend development with AntD.
 - **Redis**: Data store used for caching frequently accessed FAQs, improving performance and reducing database load.
 - **Google Translate**: Used for automatically translating FAQs into multiple languages.
+
+## FAQ System
+
+### Fetching FAQs (GET /faqs?lang=)
+
+- When a request is made, it first checks Redis cache for FAQs in the requested language.
+- If cached FAQs are found, they are returned immediately for fast response.
+- If no cache exists, FAQs are fetched from MongoDB.
+- If the requested language is not English and translations exist in the database, those are used.
+- If translations do not exist, the system automatically translates the FAQs.
+- The translated FAQs are then stored in Redis with a 2-minute expiry to optimize subsequent requests.
+
+### Strategy Behind 2-Minute Expiry for Other Languages
+
+- The English FAQs remain static and are fetched directly from MongoDB.
+- Other languages are dynamically translated and cached for 2 minutes.
+  - This ensures that frequently requested languages respond faster without querying MongoDB or translating repeatedly.
+  - It prevents stale data issues—if FAQs are updated, new translations will be fetched after cache expiration.
+  - If a translation is requested before expiry, it is served from cache, reducing load on the translation service and database.
+
+### Creating a New FAQ (POST /faqs)
+
+- New FAQs are added to MongoDB and immediately stored in the Redis cache for English.
+- Cached FAQs in other languages are not updated instantly; they will be regenerated on the next request after cache expiration.
+
+### Deleting an FAQ (DELETE /faqs/:id)
+
+- The system first validates the given ID.
+- If the FAQ exists, it is removed from MongoDB.
+- Cached FAQs (English) are updated by removing the deleted FAQ.
+
+### Handling Translations
+
+- If an FAQ is requested in a language that does not exist in MongoDB, automatic translation occurs.
+- These translations are then stored in Redis with a 2-minute expiry.
+- If a translated FAQ is later updated, the cache will naturally refresh on the next request after expiry.
+
+### Performance Optimization
+
+- Using Redis caching reduces the number of MongoDB queries.
+- 2-minute cache expiration ensures up-to-date translations without excessive API calls.
+- Only non-English FAQs are cached dynamically, while English FAQs remain permanently available.
+- The system balances fast retrieval and data consistency effectively.
 
 ## Setup Instructions
 
@@ -157,6 +201,7 @@ The **React frontend** communicates with the backend through these API endpoints
   ```json
   [
     {
+        "id":1
         "question": "क्या प्रतिक्रिया है?",
         "answer": "<html><head></head><body><p>प्रतिक्रिया एक है<strong>जावास्क्रिप्ट लाइब्रेरी</strong>उपयोगकर्ता इंटरफेस के निर्माण के लिए। यह फेसबुक और व्यक्तिगत डेवलपर्स और कंपनियों के एक समुदाय द्वारा बनाए रखा जाता है।</p></body></html>"
     },
@@ -219,6 +264,14 @@ The **React frontend** communicates with the backend through these API endpoints
    - Handles Translations: Uses pre-existing translations if available; otherwise, translates and stores the result.
    - Caches Translated Data: Stores non-English FAQs in Redis for 2 minutes to enhance performance.
    - Optimized Data Flow: Ensures efficient retrieval while dynamically handling multilingual support.
+
+3. **`Delete /faqs/:id`**:
+
+   - Validates FAQ ID: Ensures the provided ID is a valid MongoDB ObjectId before proceeding.
+   - Checks Existence: Queries MongoDB to check if the FAQ exists before attempting deletion.
+   - Updates Redis Cache:: Removes the FAQ entry from MongoDB if found.
+   - Caches Translated Data: If the FAQ existed in the cache, it updates the cached data by removing the deleted entry.
+   - Handles Errors Gracefully: Returns appropriate error messages for invalid IDs, missing records, or server issues.
 
 ## Improvements
 
