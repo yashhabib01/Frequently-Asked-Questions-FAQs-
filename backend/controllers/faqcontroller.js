@@ -107,7 +107,7 @@ exports.createFaq = async (req, res) => {
     let cachedFaqs = await redisClient.get("faqs:en");
     cachedFaqs = cachedFaqs ? JSON.parse(cachedFaqs) : [];
     cachedFaqs.push({ question, answer });
-    await redisClient.setEx("faqs:en", -1, JSON.stringify(cachedFaqs));
+    await redisClient.set("faqs:en", JSON.stringify(cachedFaqs));
 
     res.json(newFAQ);
   } catch (error) {
